@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using app;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -34,6 +35,17 @@ namespace api
                 options.UseSqlServer(
                     "Data Source=localhost;Initial Catalog=db_design_patterns_sql_dev;User Id=sa;Password=somethingStr0ng#;");
             });
+
+            var useDynamoDB = false;
+
+            if (useDynamoDB)
+            {
+                
+            }
+            else
+            {
+                services.AddTransient<IFootballRepository, SqlServerFootballRepository>();
+            }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

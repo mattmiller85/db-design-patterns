@@ -33,6 +33,7 @@ namespace api.Controllers
         }
         
         [HttpGet]
+        [Route("{playerId}")]
         public async Task<ActionResult<Player>> Get(string playerId)
         {
             var player = await _wvuFootballRepository.GetPlayerById(playerId);
