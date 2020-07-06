@@ -2,11 +2,10 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.0</TargetFramework>
-        <RootNamespace>persistence_nosql</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.3.106.28" />
+      <ProjectReference Include="..\models\models.csproj" />
     </ItemGroup>
 
 </Project>

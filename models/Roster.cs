@@ -7,7 +7,7 @@ namespace models
     {
         public string Id { get; set; }
         public int Year { get; set; }
-        public List<Player> Players { get; set; }
+        public List<PlayerRoster> PlayerRosters { get; set; }
         public string Conference { get; set; }
     }
 }

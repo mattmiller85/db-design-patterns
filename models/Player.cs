@@ -9,6 +9,6 @@ namespace models
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public Position Position { get; set; }
-        public List<Roster> Rosters { get; set; }
+        public List<PlayerRoster> PlayerRosters { get; set; }
     }
 }
