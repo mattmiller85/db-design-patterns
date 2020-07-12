@@ -45,8 +45,25 @@ namespace persistence_relational
 
         public async Task<Roster> GetRoster(int year)
         {
-            return await _dataContext.Rosters
-                .FirstOrDefaultAsync(r => r.Year == year);
+            var players = await _dataContext.PlayerRosters
+                .Include(r => r.Roster)
+                .Include(r => r.Player)
+                .ThenInclude(p => p.Position)
+                .Where(r => r.Roster.Year == year)
+                .ToListAsync();
+
+            var roster = players.FirstOrDefault()?.Roster;
+            if (roster != null)
+            {
+                roster.PlayerRosters = null;
+                roster.Players = players.Select(p => p.Player).ToList();
+                foreach (var rosterPlayer in roster.Players)
+                {
+                    rosterPlayer.PlayerRosters = null;
+                }
+            }
+
+            return players.Any() ? roster : (await _dataContext.Rosters.FirstOrDefaultAsync(r => r.Year == year));
         }
     }
 }

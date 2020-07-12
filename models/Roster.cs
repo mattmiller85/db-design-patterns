@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace models
 {
@@ -9,5 +9,7 @@ namespace models
         public int Year { get; set; }
         public List<PlayerRoster> PlayerRosters { get; set; }
         public string Conference { get; set; }
+        [NotMapped]
+        public List<Player> Players { get; set; }
     }
 }
