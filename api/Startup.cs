@@ -36,7 +36,7 @@ namespace api
                     "Data Source=localhost;Initial Catalog=db_design_patterns_sql_dev;User Id=sa;Password=somethingStr0ng#;");
             });
 
-            var useDynamoDB = false;
+            var useDynamoDB = false; // TODO - load from configuration
 
             if (useDynamoDB)
             {

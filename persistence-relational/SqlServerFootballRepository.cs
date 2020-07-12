@@ -18,10 +18,13 @@ namespace persistence_relational
         
         public async Task<Player> GetPlayerById(string playerId)
         {
-            return await _dataContext.Players
+            var player = await _dataContext.Players
                 .Include(p => p.Position)
                 .Include(p => p.PlayerRosters)
+                .ThenInclude(r => r.Roster)
                 .FirstOrDefaultAsync(p => p.Id == playerId);
+            player.Rosters = player.PlayerRosters.Select(r => r.Roster).ToList();
+            return player;
         }
 
         public async Task<List<Player>> GetAllPlayers()
