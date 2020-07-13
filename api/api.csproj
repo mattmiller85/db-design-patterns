@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\app\app.csproj" />
+      <ProjectReference Include="..\persistence-nosql\persistence-nosql.csproj" />
       <ProjectReference Include="..\persistence-relational\persistence-relational.csproj" />
     </ItemGroup>
 

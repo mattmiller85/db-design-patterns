@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using persistence_nosql;
 using persistence_relational;
 
 namespace api
@@ -36,11 +37,10 @@ namespace api
                     "Data Source=localhost;Initial Catalog=db_design_patterns_sql_dev;User Id=sa;Password=somethingStr0ng#;");
             });
 
-            var useDynamoDB = false; // TODO - load from configuration
-
-            if (useDynamoDB)
+            bool.TryParse(Configuration["UseDynamoDB"], out bool useDynamoDb);
+            if (useDynamoDb)
             {
-                
+                services.AddTransient<IFootballRepository, DynamoDbFootballRepository>();
             }
             else
             {
