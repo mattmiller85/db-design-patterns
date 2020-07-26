@@ -14,35 +14,14 @@ namespace persistence_nosql
     {
         public async Task<Player> GetPlayerById(string playerId)
         {
-            CredentialProfile creds;
-            if (!new NetSDKCredentialsFile().TryGetProfile("matt.miller", out creds))
-            {
-                throw new ApplicationException($"Couldn't load profile: matt.miller");
-            }
-            var ddb = new AmazonDynamoDBClient(creds.GetAWSCredentials(new NetSDKCredentialsFile()));
+            var ddb = GetDdbClient();
             var item = await ddb.GetItemAsync(new GetItemRequest("wvufootball.players",
                 new Dictionary<string, AttributeValue>
                 {
                     {"id", new AttributeValue(playerId)}
                 }));
-            var player = new Player
-            {
-                Id = item.Item["id"].S,
-                FirstName = item.Item["firstName"].S,
-                LastName = item.Item["lastName"].S,
-                Position = new Position
-                {
-                    Id = item.Item["position"].M["id"].S,
-                    Abbreviation = item.Item["position"].M["abbreviation"].S,
-                    Name = item.Item["position"].M["name"].S,
-                    IsOffense = item.Item["position"].M["isOffense"].BOOL
-                },
-                Rosters = item.Item["rosters"].L.Select(m => new Roster
-                {
-                    Id = m.M["id"].S
-                }).ToList()
-            };
-            
+            var player = GetPlayerFromItem(item.Item);
+            //
             // var rosters = await ddb.BatchGetItemAsync(new BatchGetItemRequest { RequestItems = new Dictionary<string, KeysAndAttributes>()
             // {
             //     {"wvufootball.rosters", new KeysAndAttributes{ Keys = player.Rosters.Select(r => new Dic) }}
@@ -50,19 +29,60 @@ namespace persistence_nosql
             return player;
         }
 
+        private static Player GetPlayerFromItem(Dictionary<string, AttributeValue> item)
+        {
+            var player = new Player
+            {
+                Id = item["id"].S,
+                FirstName = item["firstName"].S,
+                LastName = item["lastName"].S,
+                Position = new Position
+                {
+                    Id = item["position"].M["id"].S,
+                    Abbreviation = item["position"].M["abbreviation"].S,
+                    Name = item["position"].M["name"].S,
+                    IsOffense = item["position"].M["isOffense"].BOOL
+                }
+            };
+            return player;
+        }
+
+        private static AmazonDynamoDBClient GetDdbClient()
+        {
+            CredentialProfile creds;
+            if (!new SharedCredentialsFile().TryGetProfile("matt.miller", out creds))
+            {
+                throw new ApplicationException($"Couldn't load profile: matt.miller");
+            }
+
+            var ddb = new AmazonDynamoDBClient(creds.GetAWSCredentials(new SharedCredentialsFile()));
+            return ddb;
+        }
+
         public async Task<List<Player>> GetAllPlayers()
         {
-            throw new NotImplementedException();
+            var ddb = GetDdbClient();
+            var items = await ddb.ScanAsync(new ScanRequest("wvufootball.players"));
+            return items.Items.Select(GetPlayerFromItem).ToList();
         }
 
         public async Task<List<Player>> FindPlayersByPositionId(string positionId)
         {
-            throw new NotImplementedException();
+            var ddb = GetDdbClient();
+            var items = await ddb.ScanAsync(new ScanRequest("wvufootball.players")
+            {
+                FilterExpression = "position.id = :pos_Id", 
+                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+                {
+                    {":pos_Id", new AttributeValue {S = positionId}}
+                }
+            });
+            return items.Items.Select(GetPlayerFromItem).ToList();
         }
 
         public async Task<List<Position>> GetPositions()
         {
-            throw new NotImplementedException();
+            return (await GetAllPlayers()).Select(p => p.Position).ToList();
         }
 
         public async Task<Roster> GetRoster(int year)
