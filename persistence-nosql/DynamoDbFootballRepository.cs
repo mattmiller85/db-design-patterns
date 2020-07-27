@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.DynamoDBv2;
-using Amazon.DynamoDBv2.Model;
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.Runtime.CredentialManagement;
 using app;
 using models;
@@ -15,39 +16,16 @@ namespace persistence_nosql
         public async Task<Player> GetPlayerById(string playerId)
         {
             var ddb = GetDdbClient();
-            var item = await ddb.GetItemAsync(new GetItemRequest("wvufootball.players",
-                new Dictionary<string, AttributeValue>
-                {
-                    {"id", new AttributeValue(playerId)}
-                }));
-            var player = GetPlayerFromItem(item.Item);
-            //
-            // var rosters = await ddb.BatchGetItemAsync(new BatchGetItemRequest { RequestItems = new Dictionary<string, KeysAndAttributes>()
-            // {
-            //     {"wvufootball.rosters", new KeysAndAttributes{ Keys = player.Rosters.Select(r => new Dic) }}
-            // }})
-            return player;
+            var context = new DynamoDBContext(ddb);
+            var config = new DynamoDBOperationConfig {OverrideTableName = "wvufootball.Players"};
+            var get = context.CreateBatchGet<Player>(config);
+            get.AddKey(playerId);
+            await get.ExecuteAsync();
+            
+            return get.Results.FirstOrDefault();
         }
 
-        private static Player GetPlayerFromItem(Dictionary<string, AttributeValue> item)
-        {
-            var player = new Player
-            {
-                Id = item["id"].S,
-                FirstName = item["firstName"].S,
-                LastName = item["lastName"].S,
-                Position = new Position
-                {
-                    Id = item["position"].M["id"].S,
-                    Abbreviation = item["position"].M["abbreviation"].S,
-                    Name = item["position"].M["name"].S,
-                    IsOffense = item["position"].M["isOffense"].BOOL
-                }
-            };
-            return player;
-        }
-
-        private static AmazonDynamoDBClient GetDdbClient()
+        public static AmazonDynamoDBClient GetDdbClient()
         {
             CredentialProfile creds;
             if (!new SharedCredentialsFile().TryGetProfile("matt.miller", out creds))
@@ -62,22 +40,25 @@ namespace persistence_nosql
         public async Task<List<Player>> GetAllPlayers()
         {
             var ddb = GetDdbClient();
-            var items = await ddb.ScanAsync(new ScanRequest("wvufootball.players"));
-            return items.Items.Select(GetPlayerFromItem).ToList();
+            var context = new DynamoDBContext(ddb);
+            var config = new DynamoDBOperationConfig {OverrideTableName = "wvufootball.Players"};
+            var get = context.ScanAsync<Player>(new ScanCondition[]{}, config);
+            
+            var ret = await get.GetRemainingAsync();
+            return ret;
         }
 
         public async Task<List<Player>> FindPlayersByPositionId(string positionId)
         {
             var ddb = GetDdbClient();
-            var items = await ddb.ScanAsync(new ScanRequest("wvufootball.players")
+            var context = new DynamoDBContext(ddb);
+            var config = new DynamoDBOperationConfig {OverrideTableName = "wvufootball.Players"};
+            var result = context.ScanAsync<Player>(new []
             {
-                FilterExpression = "position.id = :pos_Id", 
-                ExpressionAttributeValues = new Dictionary<string, AttributeValue>
-                {
-                    {":pos_Id", new AttributeValue {S = positionId}}
-                }
-            });
-            return items.Items.Select(GetPlayerFromItem).ToList();
+                new ScanCondition("Id", ScanOperator.Equal, positionId),
+            }, config);
+
+            return await result.GetRemainingAsync();
         }
 
         public async Task<List<Position>> GetPositions()
@@ -87,7 +68,15 @@ namespace persistence_nosql
 
         public async Task<Roster> GetRoster(int year)
         {
-            throw new NotImplementedException();
+            var ddb = GetDdbClient();
+            var context = new DynamoDBContext(ddb);
+            var config = new DynamoDBOperationConfig {OverrideTableName = "wvufootball.Rosters"};
+            var result = context.ScanAsync<Roster>(new []
+            {
+                new ScanCondition("Year", ScanOperator.Equal, year),
+            }, config);
+
+            return (await result.GetRemainingAsync()).FirstOrDefault();
         }
     }
 }
